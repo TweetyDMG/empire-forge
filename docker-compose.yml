@@ -1,0 +1,45 @@
+# =============================================================================
+# EmpireForge — Docker Compose
+# =============================================================================
+# Запуск одной командой:
+#   docker compose up -d
+#
+# Для локальной разработки (H2 + Long Polling):
+#   docker compose --profile dev up -d
+# =============================================================================
+
+services:
+  app:
+    build: .
+    container_name: empireforge-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:?err}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?err}
+      - TELEGRAM_BOT_LONG_POLLING=${TELEGRAM_BOT_LONG_POLLING:-true}
+      - TELEGRAM_BOT_WEBHOOK_PATH=${TELEGRAM_BOT_WEBHOOK_PATH:-}
+      - TELEGRAM_BOT_SECRET_TOKEN=${TELEGRAM_BOT_SECRET_TOKEN:-}
+    profiles:
+      - prod
+      - dev
+
+  # Для production можно подключить PostgreSQL (требуется настройка datasource)
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: empireforge-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: empireforge
+  #     POSTGRES_USER: empireforge
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:?err}
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   profiles: [ prod ]
+
+volumes:
+  pgdata:
