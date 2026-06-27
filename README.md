@@ -1,62 +1,36 @@
 # EmpireForge — Telegram Bot для экономической стратегии
 
-**EmpireForge** — это Telegram-бот, реализующий симулятор управления компанией. Игрок создаёт бизнес (услуги или производство), управляет ресурсами, сотрудниками и финансами, принимает ежедневные решения в условиях динамичного рынка.
+Telegram-бот, реализующий симулятор управления компанией. Игрок создаёт бизнес (услуги или производство), управляет ресурсами, сотрудниками и финансами, принимает ежедневные решения в условиях динамичного рынка. Реализован на Java 23 + Spring Boot.
 
 ---
 
 ## 🛠 Технологический стек
 
-| Категория | Технология |
-|-----------|------------|
-| **Язык** | Java 23 |
-| **Фреймворк** | Spring Boot 3.4.4 (Web, Data JPA, Validation) |
-| **База данных** | H2 (In-Memory — dev), PostgreSQL (production — опционально) |
-| **Telegram API** | TelegramBots 6.9.7.1 (Long Polling + Webhook) |
-| **ORM** | Hibernate 6 / Jakarta Persistence 3.x |
-| **Сборка** | Apache Maven |
-| **Контейнеризация** | Docker / Docker Compose |
-| **Логирование** | SLF4J + Logback 1.5.x |
+При проектировании архитектуры приложения упор делался на надёжность хранения данных и модульность.
+
+*   **Язык разработки:** Java 23
+*   **Фреймворки:** Spring Boot 3.4.4 (Web, Data JPA, Validation)
+*   **Базы данных:** H2 (In-Memory — dev), PostgreSQL (production — опционально)
+*   **Кэширование и очереди:** не используются
+*   **Контейнеризация и DevOps:** Docker, Docker Compose
+*   **Инструменты тестирования:** JUnit (Spring Boot Test)
 
 ---
 
 ## 🚀 Ключевой функционал
 
-- **Регистрация игроков** — автоматическое создание профиля при старте игры
-- **Создание компании** — выбор типа бизнеса: `SERVICES` (услуги) или `PRODUCTION` (производство)
-- **Бизнес-симуляция** — ежедневный цикл: доходы от спроса, расходы на зарплаты и налоги
-- **Просмотр состояния** — баланс, штат сотрудников, репутация, ресурсы, рыночный спрос, конкуренция
-- **Два режима доставки обновлений** — Long Polling (LOCAL) и Webhook (PRODUCTION)
-- **Защита webhook** — верификация через `X-Telegram-Bot-Api-Secret-Token`
+*   **Управление пользователями:** Автоматическое создание профиля при старте игры
+*   **Автоматизация логики:** Бизнес-симуляция — ежедневный цикл: доходы от спроса, расходы на зарплаты и налоги, динамический рыночный спрос и конкуренция
+*   **Интеграции:** TelegramBots API (Long Polling + Webhook), верификация webhook через `X-Telegram-Bot-Api-Secret-Token`
+*   **Валидация и безопасность:** Выбор типа бизнеса: `SERVICES` (услуги) или `PRODUCTION` (производство)
 
 ---
 
-## 📁 Архитектура и структура данных
+## 📁 Архитектура и структура проекта
 
-### Модель базы данных
+В проекте используется классическая MVC-архитектура с паттерном Repository. Это обеспечивает независимость бизнес-логики от внешних библиотек и баз данных.
 
-```
-┌──────────────┐       ┌──────────────────┐       ┌──────────────────────────┐
-│    Player    │       │     Company      │       │       GameState          │
-├──────────────┤       ├──────────────────┤       ├──────────────────────────┤
-│ chat_id (PK) │──1:N──│ company_id (PK)  │──1:1──│ state_id (PK)            │
-│ username     │       │ chat_id (FK)     │       │ company_id (FK)          │
-│ created_at   │       │ company_type     │       │ balance (default 10 000) │
-└──────────────┘       │ name             │       │ employees (default 5)    │
-                       │ created_at       │       │ reputation               │
-                       └──────────────────┘       │ resources                │
-                                                  │ demand                   │
-                                                  │ competition              │
-                                                  │ tax_rate                 │
-                                                  │ service_quality          │
-                                                  │ equipment_level          │
-                                                  │ current_day              │
-                                                  │ last_updated             │
-                                                  └──────────────────────────┘
-```
-
-### Структура проекта
-
-```
+```text
 EmpireForge/
 ├── Dockerfile                                  # Multi-stage сборка
 ├── docker-compose.yml                          # Docker Compose (prod/dev)
@@ -73,15 +47,15 @@ EmpireForge/
 │   │   │   └── TelegramBotConfig.java          # @ConfigurationProperties
 │   │   ├── dto/
 │   │   │   ├── GameResponse.java               # Generic ответ
-│   │   │   └── GameStatusResponse.java         # Статус компании (DTO)
+│   │   │   └── GameStatusResponse.java         # Статус компании
 │   │   ├── entity/
 │   │   │   ├── Player.java                     # JPA: игрок
 │   │   │   ├── Company.java                    # JPA: компания
 │   │   │   └── GameState.java                  # JPA: игровое состояние
 │   │   ├── exception/
 │   │   │   ├── GameException.java              # Базовое исключение
-│   │   │   ├── CompanyNotFoundException.java   # Компания не найдена
-│   │   │   └── GameStateNotFoundException.java # Состояние не найдено
+│   │   │   ├── CompanyNotFoundException.java
+│   │   │   └── GameStateNotFoundException.java
 │   │   ├── repository/
 │   │   │   ├── PlayerRepository.java
 │   │   │   ├── CompanyRepository.java
@@ -89,9 +63,9 @@ EmpireForge/
 │   │   └── service/
 │   │       └── GameService.java                # Бизнес-логика
 │   └── resources/
-│       ├── application.properties              # Основная конфигурация
-│       ├── application-local.properties         # Локальная (в .gitignore)
-│       ├── logback-spring.xml                  # Логирование
+│       ├── application.properties
+│       ├── application-local.properties
+│       ├── logback-spring.xml
 │       └── schema.sql                          # DDL-скрипт
 └── src/test/
     ├── java/.../
@@ -105,78 +79,39 @@ EmpireForge/
 
 ## 💻 Локальное развертывание
 
-### Требования
+Для запуска проекта в изолированном окружении вам понадобятся **Java 23**, **Maven 3.9+** и Telegram-бот, зарегистрированный через [@BotFather](https://t.me/BotFather).
 
-- **Java 23** (OpenJDK)
-- **Apache Maven 3.9+**
-- **Docker** (опционально)
-- Telegram-бот, зарегистрированный через [@BotFather](https://t.me/BotFather)
-
-### 1. Клонирование
+### 1. Клонирование репозитория
 
 ```bash
-git clone https://github.com/<your-org>/empireforge.git
+git clone https://github.com/<ваш-username>/empireforge.git
 cd empireforge
 ```
 
 ### 2. Настройка переменных окружения
 
-Скопируйте `.env.example` в `.env` и заполните свои значения:
+Создайте файл `.env` в корневой директории проекта по образцу `.env.example`:
 
-```bash
-cp .env.example .env
-```
-
-Минимальный `.env`:
-
-```ini
+```env
 TELEGRAM_BOT_USERNAME=my_company_bot
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 TELEGRAM_BOT_LONG_POLLING=true
 ```
 
-Также можно скопировать локальный конфиг (он уже в `.gitignore`):
+### 3. Запуск
 
 ```bash
-cp src/main/resources/application-local.properties src/main/resources/application.properties
-```
-
-### 3. Сборка и запуск (Maven)
-
-```bash
+# Сборка
 mvn clean package -DskipTests
+
+# Запуск (Long Polling)
 mvn spring-boot:run
-```
 
-Сборка без сети (если зависимости уже в локальном репозитории):
-
-```bash
-mvn -o spring-boot:run
-```
-
-### 4. Запуск через Docker
-
-```bash
-# Собрать образ
-docker build -t empireforge .
-
-# Запустить
-docker run --rm -p 8080:8080 \
-  -e TELEGRAM_BOT_USERNAME="..." \
-  -e TELEGRAM_BOT_TOKEN="..." \
-  -e TELEGRAM_BOT_LONG_POLLING="true" \
-  empireforge
-```
-
-### 5. Запуск через Docker Compose
-
-```bash
+# Запуск через Docker
 docker compose --profile dev up -d
 ```
 
-После запуска бот будет отвечать на команды в Telegram в режиме Long Polling.
-
-### Тестирование
+### 4. Тестирование
 
 ```bash
 mvn test
@@ -199,21 +134,15 @@ mvn test
 | Метод | Путь | Описание |
 |-------|------|----------|
 | `POST` | `/telegram` | Приём обновлений от Telegram |
-| `GET` | `/h2-console` | Консоль H2 (dev, по умолчанию отключена) |
 
 ---
 
-## 🧪 Команды Maven
+## 👥 Разработчики
 
-```bash
-mvn clean compile           # Компиляция
-mvn test                    # Запуск тестов
-mvn package -DskipTests     # Сборка JAR
-mvn spring-boot:run         # Запуск приложения
-```
+* [**Артем Рогачев**](https://github.com/TweetyDMG) — Backend Developer
 
----
+## 📜 Лицензия
 
-## 📄 Лицензия
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-MIT License — проект создан в образовательных целях.
+Проект распространяется на условиях лицензии **MIT**. Полный текст лицензии находится в файле [LICENSE](./LICENSE).
